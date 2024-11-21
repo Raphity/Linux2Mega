@@ -1,6 +1,10 @@
 #!/bin/bash
 
-help_message="This program zip your home folder to temp dir and encrypt it with openssl aes-256-cbc 
+usage="\
+
+Usage: backup.sh [OPTIONS] ...
+
+This program zip your home folder to temp dir and encrypt it with openssl aes-256-cbc 
 then it copies it to external drive if pluged in. Use this program to create an encrypted 
 home folder backup file. In order to upload it on the MEGA and make a copy on sperate drive.
 
@@ -10,9 +14,11 @@ then the credentials for MEGA account
 The backup file are not meant by default to be stored locally on device (default dir /tmp).
 Use -f to change backup directory
 
--f path
+  -f path  Change path of baskup directory 
 
--x: excpluded files
+  -h  Display help message
+
+  -x excpluded_files Path of excluded files that will not be backup
 "
 
 end_message=$(cat <<'EOF'
@@ -55,7 +61,7 @@ fi
 while getopts "hf:x:" args; do
     case "${args}" in
       h)
-        echo "$help_message" 
+        echo "$usage" 
         echo "$log_date : display help message" >> "log_file"
         exit 0
       ;;
@@ -108,8 +114,14 @@ if "$is_installed"; then
 fi
 
 #Setting path variables
-current_dir=$(pwd)
+current_dir="$PWD"
 target_dir="$HOME"
+home_dir_size="$(du -sb "$target_dir" | cut -f1)"
+
+if [ "$home_dir_size" -ge 21474836480 ]; then
+  echo -e "Home dir size too large exeeding 20 Giga Bytes \n" >&2 >> "$log_file" && exit 1
+fi
+
 drive_names=$(ls /media/"$USER"/)
 
 if [ -z "$drive_names" ]; then
